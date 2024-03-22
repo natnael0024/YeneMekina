@@ -14,7 +14,7 @@ class BoloSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Bolo
-        fields = ('id', 'inspection_date', 'expire_date', 'image', 'isAboutToExpire', 'isExpired', 'daysRemaining', 'plate_number', 'completed')
+        fields = ('id', 'inspection_date', 'expire_date', 'image','vehicle_id', 'isAboutToExpire', 'isExpired', 'daysRemaining', 'plate_number', 'completed')
 
 
     def get_isAboutToExpire(self, obj):
