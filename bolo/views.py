@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Bolo
+from thirdparty.models import ThirdParty
 from roadfund.models import RoadFund
 from .serializers import BoloSerializer
 from vehicle.models import Vehicle
@@ -64,8 +65,8 @@ def bolo_list_view(request):
             if vehicle.road_funds.count() < 1:
                 RoadFund.objects.create(vehicle=vehicle)
 
-            # if vehicle.thirdparties.count() < 1:
-            #     ThirdParty.objects.create(vehicle=vehicle)
+            if vehicle.third_parties.count() < 1:
+                ThirdParty.objects.create(vehicle=vehicle)
 
             # if vehicle.fullinsurances.count() < 1:
             #     FullInsurance.objects.create(vehicle=vehicle)
@@ -77,7 +78,7 @@ def bolo_list_view(request):
         else:
             vehicle = Vehicle.objects.create(plate_number=plate_number, user=user)
             RoadFund.objects.create(vehicle=vehicle)
-            # ThirdParty.objects.create(vehicle=vehicle)
+            ThirdParty.objects.create(vehicle=vehicle)
             # FullInsurance.objects.create(vehicle=vehicle)
             # Oil.objects.create(vehicle=vehicle)
             vehicle_id = vehicle.id
@@ -203,20 +204,20 @@ def bolo_detail_view(request, id):
                 vehicle = Vehicle.objects.create(user=user, plate_number=plate_number)
                 bolo.vehicle_id = vehicle.id
 
-            # rf = RoadFund.objects.filter(vehicle_id=current_vehicle_id).first()
-            # if rf:
-            #     rf.vehicle_id = bolo.vehicle_id
-            #     rf.save()
+            rf = RoadFund.objects.filter(vehicle_id=current_vehicle_id).first()
+            if rf:
+                rf.vehicle_id = bolo.vehicle_id
+                rf.save()
 
             # fi = FullInsurance.objects.filter(vehicle_id=current_vehicle_id).first()
             # if fi:
             #     fi.vehicle_id = bolo.vehicle_id
             #     fi.save()
 
-            # tp = ThirdParty.objects.filter(vehicle_id=current_vehicle_id).first()
-            # if tp:
-            #     tp.vehicle_id = bolo.vehicle_id
-            #     tp.save()
+            tp = ThirdParty.objects.filter(vehicle_id=current_vehicle_id).first()
+            if tp:
+                tp.vehicle_id = bolo.vehicle_id
+                tp.save()
 
             # oil = Oil.objects.filter(vehicle_id=current_vehicle_id).first()
             # if oil:
