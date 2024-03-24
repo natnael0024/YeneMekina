@@ -21,7 +21,6 @@ class BoloSerializer(serializers.ModelSerializer):
         if obj.expire_date:
             current_date = datetime.now().date()
             expire_date = obj.expire_date
-
             if isinstance(expire_date, str):
                 expire_date = datetime.strptime(expire_date, '%Y-%m-%d').date()
 

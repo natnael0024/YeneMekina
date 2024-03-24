@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'vehicle',
 
     'bolo',
+    'drivinglicense',
 
     'accounts',
     'rest_framework.authtoken',
