@@ -15,13 +15,12 @@ class DrivingLicense(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        # Check if the image field is not empty
-        if self.image:
-            # Extract the original file extension
-            file_extension = os.path.splitext(self.image.name)[1]
-            # Generate a unique file name with the original file name and UUID
-            file_name = f'license_{uuid.uuid4()}{file_extension}'
-            # Update the image field with the new file name
-            self.image.name = f'{file_name}'
-        super(DrivingLicense, self).save(*args, **kwargs)
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self._original_image = self.image.name
+
+    # def save(self, *args, **kwargs):
+    #     if self.image and self.image.name != self._original_image:
+    #         file_extension = os.path.splitext(self.image.name)[1]
+    #         self.image.name = f'license_{uuid.uuid4()}{file_extension}'
+    #     super(DrivingLicense, self).save(*args, **kwargs)
