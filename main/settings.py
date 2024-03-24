@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 
     'bolo',
     'drivinglicense',
+    'roadfund',
 
     'accounts',
     'rest_framework.authtoken',
