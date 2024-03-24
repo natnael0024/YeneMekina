@@ -10,9 +10,8 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.db.models import Count
 
-# @login_required
 def bolo_list_view(request):
-    
+
     token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
     try:
         token_obj = Token.objects.get(key=token)
