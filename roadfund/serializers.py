@@ -1,11 +1,10 @@
 from rest_framework import serializers
-from .models import Bolo
+from .models import RoadFund
 from vehicle.models import Vehicle
-from datetime import datetime, timedelta
 from datetime import datetime
 
 
-class BoloSerializer(serializers.ModelSerializer):
+class RoadFundSerializer(serializers.ModelSerializer):
     isAboutToExpire = serializers.SerializerMethodField()
     isExpired = serializers.SerializerMethodField()
     daysRemaining = serializers.SerializerMethodField()
@@ -13,8 +12,8 @@ class BoloSerializer(serializers.ModelSerializer):
     completed = serializers.SerializerMethodField()
 
     class Meta:
-        model = Bolo
-        fields = ('id', 'inspection_date', 'expire_date', 'image','vehicle_id', 'isAboutToExpire', 'isExpired', 'daysRemaining', 'plate_number', 'completed')
+        model = RoadFund
+        fields = ('id', 'issue_date', 'expire_date', 'image','vehicle_id', 'isAboutToExpire', 'isExpired', 'daysRemaining', 'plate_number', 'completed')
 
 
     def get_isAboutToExpire(self, obj):
@@ -60,4 +59,4 @@ class BoloSerializer(serializers.ModelSerializer):
         return None
 
     def get_completed(self, obj):
-        return "completed" if obj.inspection_date and obj.expire_date else "incomplete"
+        return "completed" if obj.issue_date and obj.expire_date else "incomplete"

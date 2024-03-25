@@ -24,7 +24,13 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
     path('api/',include('bolo.urls')),
+<<<<<<< HEAD
     path('api/',include('webuser.urls')),
+=======
+    path('api/',include('drivinglicense.urls')),
+    path('api/',include('roadfund.urls')),
+    path('api/',include('thirdparty.urls')),
+>>>>>>> 6d4eab6a3bdffdd184f6ddef4f75177d04e197a0
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
