@@ -1,13 +1,15 @@
 from rest_framework import serializers
 from .models import CustomUser
-
+from django.contrib.auth.models import Group
 class UserSerializer(serializers.ModelSerializer):
+    group = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), required=False)
     class Meta:
         model = CustomUser 
+       
         fields = (
             'id', 'username', 'email', 'password', 'first_name', 'last_name',
             'phone_number', 'lang', 'avatar', 'otp', 'otp_timestamp', 'status',
-             'created_at', 'updated_at'
+             'created_at', 'updated_at','group'
         )
         extra_kwargs = {'password': {'write_only': True}}
         
@@ -22,6 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
             last_name=validated_data['last_name'], 
             phone_number='+251' + phone_number,
             password=validated_data['password']   
+            
         )
         return user
     

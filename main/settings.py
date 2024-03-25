@@ -44,12 +44,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'vehicle',
-
+    'webuser',
     'bolo',
+<<<<<<< HEAD
+=======
     'drivinglicense',
     'roadfund',
     'thirdparty',
 
+>>>>>>> 6d4eab6a3bdffdd184f6ddef4f75177d04e197a0
     'accounts',
     'rest_framework.authtoken',
 
