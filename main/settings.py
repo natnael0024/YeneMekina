@@ -46,13 +46,9 @@ INSTALLED_APPS = [
     'vehicle',
     'webuser',
     'bolo',
-<<<<<<< HEAD
-=======
     'drivinglicense',
     'roadfund',
     'thirdparty',
-
->>>>>>> 6d4eab6a3bdffdd184f6ddef4f75177d04e197a0
     'accounts',
     'rest_framework.authtoken',
 
@@ -157,3 +153,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
 }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
