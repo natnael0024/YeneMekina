@@ -15,17 +15,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from django.db.models import Count
-<<<<<<< HEAD
-from rest_framework.decorators import api_view,permission_classes
-# @login_required
 
-# @permission_classes([IsAdminUser])
-=======
 import os
 import uuid
 
 @api_view(['GET','POST'])
->>>>>>> 6d4eab6a3bdffdd184f6ddef4f75177d04e197a0
+
 def bolo_list_view(request):
 
     token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
