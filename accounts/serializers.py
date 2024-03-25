@@ -3,6 +3,7 @@ import time
 import requests
 from rest_framework import serializers
 from .models import CustomUser
+
 import os
 import dotenv
 from django.http import JsonResponse
@@ -12,24 +13,17 @@ from rest_framework.response import Response
 
 dotenv.load_dotenv()
 
+from django.contrib.auth.models import Group
 
 class UserSerializer(serializers.ModelSerializer):
+    group = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), required=False)
     class Meta:
-        model = CustomUser
+        model = CustomUser 
+       
         fields = (
-            "username",
-            "email",
-            "password",
-            "first_name",
-            "last_name",
-            "phone_number",
-            "lang",
-            "avatar",
-            "otp",
-            "otp_timestamp",
-            "status",
-            "created_at",
-            "updated_at",
+            'id', 'username', 'email', 'password', 'first_name', 'last_name',
+            'phone_number', 'lang', 'avatar', 'otp', 'otp_timestamp', 'status',
+             'created_at', 'updated_at','group'
         )
         extra_kwargs = {"password": {"write_only": True}}
 
@@ -40,11 +34,13 @@ class UserSerializer(serializers.ModelSerializer):
             username = phone_number
         user = CustomUser.objects.create_user(
             username=username,
+
             first_name=validated_data["first_name"],
             last_name=validated_data["last_name"],
             phone_number="+251" + phone_number,
             password=validated_data["password"],
             avatar=validated_data["avatar"],
+
         )
         self.send_otp(phone_number)
         return user
