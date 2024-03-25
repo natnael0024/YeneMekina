@@ -49,6 +49,9 @@ INSTALLED_APPS = [
     'drivinglicense',
     'roadfund',
     'thirdparty',
+
+    'fullinsurance',
+
     'accounts',
     'rest_framework.authtoken',
 

@@ -5,6 +5,6 @@ from .views import (
 )
 
 urlpatterns = [
-    path('thirdparties',thirdparty_list_view, name='thirdparty_list_view'),
-    path('thirdparties/<int:id>',thirdParty_detail_view, name='thirdparty_detail_view'),
+    path('',thirdparty_list_view, name='thirdparty_list_view'),
+    path('/<int:id>',thirdParty_detail_view, name='thirdparty_detail_view'),
 ]
