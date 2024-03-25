@@ -1,0 +1,167 @@
+from django.shortcuts import render
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from .models import FullInsurance
+from .serializers import FullInsuranceSerializer
+from rest_framework.authtoken.models import Token
+from django.shortcuts import get_object_or_404
+from django.core.files.storage import default_storage
+from django.conf import settings
+import os
+import uuid
+import json
+
+@api_view(['GET','POST'])
+def fullinsurance_list_view(request):
+
+    token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
+    try:
+        token_obj = Token.objects.get(key=token)
+        user = token_obj.user
+    except Token.DoesNotExist:
+        user = None
+
+    if user:
+        user_id = user.id
+    else:
+        return Response({'message: unauthenticated'})
+    
+    if request.method == 'GET':
+        full_insurances = FullInsurance.objects.filter(vehicle__user=user).order_by('-created_at')
+
+        serialized_data = []
+        for full_insurance in full_insurances:
+            images = json.loads(full_insurance.images)
+            images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
+            full_insurance_data = FullInsuranceSerializer(full_insurance).data
+            full_insurance_data['images'] = images_data
+            serialized_data.append(full_insurance_data)
+
+        return Response({'date':serialized_data}, status=status.HTTP_200_OK)
+    
+    elif request.method == 'POST':
+        plate_number = request.POST.get('plate_number')
+
+        images = []
+        if 'images' in request.FILES:
+            for image in request.FILES.getlist('images'):
+                file_ext = os.path.splitext(image.name)[1]
+                image_name = f'fullinsurance_{uuid.uuid4()}{file_ext}'
+                file_path = f'fullinsurances/{image_name}'
+                default_storage.save(file_path, image)
+                image_url = f'{settings.MEDIA_URL}{file_path}'
+                images.append(image_url)
+
+        vehicle = user.vehicles.filter(plate_number=plate_number).first()
+
+        if vehicle:
+            if vehicle.full_insurances.count() > 0:
+                return Response({'message': 'Full insurance already registered for this plate'}, status=409)
+        else:
+            vehicle = user.vehicles.create(plate_number=plate_number)
+
+        full_insurance = FullInsurance.objects.create (
+            vehicle_id = vehicle.id,
+            insurer = request.data.get('insurer'),
+            issue_date= request.data.get('issue_date'),
+            expire_date = request.data.get('expire_date'),
+            images = json.dumps(images),
+            notification_status = False
+        )
+
+        images = json.loads(full_insurance.images)
+        images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
+        full_insurance_data = FullInsuranceSerializer(full_insurance).data
+        full_insurance_data['images'] = images_data
+
+        return Response(full_insurance_data, status=status.HTTP_201_CREATED)
+
+
+
+@api_view(['GET','POST','PUT','DELETE'])
+def fullinsurance_detail_view(request,id):
+    token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
+    try:
+        token_obj = Token.objects.get(key=token)
+        user = token_obj.user
+    except Token.DoesNotExist:
+        user = None
+
+    if user:
+        user_id = user.id
+    else:
+        return Response({'message: unauthenticated'})
+    
+    full_insurance = get_object_or_404(FullInsurance, id=id,vehicle__user=user)
+
+    #show
+    if request.method == 'GET':
+        serializer = FullInsuranceSerializer(full_insurance)
+        return Response({'data':serializer.data})
+    
+    #update
+    elif request.method == 'POST' or request.method == 'PUT':
+        plate_number = request.data.get('plate_number')
+        insurer = request.data.get('insurer')
+        issue_date = request.data.get('issue_date')
+        expire_date = request.data.get('expire_date')
+
+        if plate_number:
+            current_vehicle_id = full_insurance.vehicle_id
+
+            vehicle = user.vehicles.filter(plate_number=plate_number).first()
+
+            if vehicle:
+                if vehicle.full_insurances.count() > 0:
+                    return Response({'message': 'Full insurance already registered for this plate'}, status=409)
+                full_insurance.vehicle_id = vehicle.id
+            else:
+                vehicle = user.vehicles.create(plate_number=plate_number)
+
+        if insurer:
+            full_insurance.insurer = insurer
+        if issue_date:
+            full_insurance.issue_date = issue_date
+        if expire_date:
+            full_insurance.expire_date = expire_date
+
+        if 'images' in request.FILES :
+            # print('@*@*@*@*@*@*@*@*@*@*@*@*@*@*@*@* = ',images)
+            new_images = []
+            for image in request.FILES.getlist('images'):
+                print('++@@@@@@@==',image.name)
+                file_ext = os.path.splitext(image.name)[1]
+                image_name = f'fullinsurance_{uuid.uuid4()}{file_ext}'
+                file_path = f'fullinsurances/{image_name}'
+                default_storage.save(file_path, image)
+                image_url = f'{settings.MEDIA_URL}{file_path}'
+                new_images.append(image_url)
+             # Update Images
+            images = json.loads(full_insurance.images)
+            images.extend(new_images)
+            full_insurance.images = json.dumps(images)
+
+        full_insurance.save()
+
+        images = json.loads(full_insurance.images)
+        images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
+        serialized = FullInsuranceSerializer(full_insurance).data
+        serialized['images'] = images_data
+
+        return Response({'data':serialized},status=200)
+
+    elif request.method == 'DELETE':
+        if full_insurance.images:
+            images = json.loads(full_insurance.images)
+            for image_url in images:
+                # Extract file path from image URL
+                file_path = image_url.replace(settings.MEDIA_URL, '')
+                print(file_path)
+                # Delete the image file from storage
+                if default_storage.exists(file_path):
+                    default_storage.delete(file_path)
+
+        full_insurance.delete()
+        return Response(status=204)
+    

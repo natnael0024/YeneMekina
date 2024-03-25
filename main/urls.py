@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/',include('drivinglicense.urls')),
     path('api/',include('roadfund.urls')),
     path('api/',include('thirdparty.urls')),
+    path('api/',include('fullinsurance.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
