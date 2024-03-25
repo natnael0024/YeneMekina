@@ -1,6 +1,8 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
+
+from webuser.permissions import IsAdminUser
 from .models import Bolo
 from .serializers import BoloSerializer
 from vehicle.models import Vehicle
@@ -9,8 +11,10 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.db.models import Count
-
+from rest_framework.decorators import api_view,permission_classes
 # @login_required
+
+# @permission_classes([IsAdminUser])
 def bolo_list_view(request):
     
     token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]

@@ -44,9 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'vehicle',
-
+    'webuser',
     'bolo',
-
     'accounts',
     'rest_framework.authtoken',
 
