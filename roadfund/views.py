@@ -5,6 +5,7 @@ from rest_framework import status
 from .models import RoadFund
 from bolo.models import Bolo
 from thirdparty.models import ThirdParty
+from fullinsurance.models import FullInsurance
 from vehicle.models import Vehicle
 from .serializers import RoadFundSerializer
 from rest_framework.authtoken.models import Token
@@ -12,6 +13,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 import os
 import uuid
+import json
 
 @api_view(['GET','POST'])
 def roadfund_list_view(request):
@@ -49,31 +51,18 @@ def roadfund_list_view(request):
             roadfund_count = vehicle.road_funds.count()
             if roadfund_count > 0:
                 return JsonResponse({'message': 'Road fund already registered for this plate'}, status=409)
-            vehicle_id = vehicle.id
-
-            if vehicle.bolos.count() < 1:
-                Bolo.objects.create(vehicle=vehicle)
-
-            if vehicle.third_parties.count() < 1:
-                ThirdParty.objects.create(vehicle=vehicle)
-
-            # if vehicle.fullinsurances.count() < 1:
-            #     FullInsurance.objects.create(vehicle=vehicle)
-
-            # if vehicle.oils.count() < 1:
-            #     Oil.objects.create(vehicle=vehicle)
-
         else:
             vehicle = Vehicle.objects.create(user=user, plate_number=plate_number)
-            vehicle_id = vehicle.id
+        
+        if vehicle.bolos.count() < 1:
             Bolo.objects.create(vehicle=vehicle)
-            # RoadFund.objects.create(vehicle=vehicle)
+        if vehicle.full_insurances.count() < 1:
+            FullInsurance.objects.create(vehicle=vehicle, images=json.dumps([]))
+        if vehicle.third_parties.count() < 1:
             ThirdParty.objects.create(vehicle=vehicle)
-            # FullInsurance.objects.create(vehicle=vehicle)
-            # Oil.objects.create(vehicle=vehicle)
 
         roadfund = RoadFund.objects.create(
-            vehicle_id = vehicle_id,
+            vehicle_id = vehicle.id,
             issue_date = issue_date,
             expire_date = expire_date,
             image = image,
@@ -140,9 +129,13 @@ def roadfund_detail_view(request,id):
             if bolo:
                 bolo.vehicle_id = roadfund.vehicle_id
                 bolo.save()
+            fi = FullInsurance.objects.filter(vehicle_id=current_vehicle_id).first()
+            if fi:
+                fi.vehicle_id = roadfund.vehicle_id
+                fi.save()
             tp = ThirdParty.objects.filter(vehicle_id=current_vehicle_id).first()
             if tp:
-                tp.vehicle_id = bolo.vehicle_id
+                tp.vehicle_id = roadfund.vehicle_id
                 tp.save()
 
 
