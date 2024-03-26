@@ -6,6 +6,7 @@ from .models import ThirdParty
 from bolo.models import Bolo
 from roadfund.models import RoadFund
 from fullinsurance.models import FullInsurance
+from oilservice.models import OilService
 from vehicle.models import Vehicle
 from .serializers import ThirdPartySerializer
 from rest_framework.authtoken.models import Token
@@ -61,6 +62,8 @@ def thirdparty_list_view(request):
             FullInsurance.objects.create(vehicle=vehicle, images=json.dumps([]))
         if vehicle.road_funds.count() < 1:
             RoadFund.objects.create(vehicle=vehicle)
+        if vehicle.oil_services.count() < 1:
+            OilService.objects.create(vehicle=vehicle)
 
         thirdparty = ThirdParty.objects.create(
             vehicle_id = vehicle.id,
@@ -140,8 +143,12 @@ def thirdParty_detail_view(request,id):
             if fi:
                 fi.vehicle_id = thirdparty.vehicle_id
                 fi.save()
-
+            oi = OilService.objects.filter(vehicle_id=current_vehicle_id).first()
+            if oi:
+                oi.vehicle_id = thirdparty.vehicle_id
+                oi.save()
             
+
         if issue_date:
             thirdparty.issue_date = issue_date
         if expire_date:
