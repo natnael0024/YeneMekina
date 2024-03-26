@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import RoadFund
 from bolo.models import Bolo
+from oilservice.models import OilService
 from thirdparty.models import ThirdParty
 from fullinsurance.models import FullInsurance
 from vehicle.models import Vehicle
@@ -60,6 +61,8 @@ def roadfund_list_view(request):
             FullInsurance.objects.create(vehicle=vehicle, images=json.dumps([]))
         if vehicle.third_parties.count() < 1:
             ThirdParty.objects.create(vehicle=vehicle)
+        if vehicle.oil_services.count() < 1:
+            OilService.objects.create(vehicle=vehicle)
 
         roadfund = RoadFund.objects.create(
             vehicle_id = vehicle.id,
@@ -137,6 +140,10 @@ def roadfund_detail_view(request,id):
             if tp:
                 tp.vehicle_id = roadfund.vehicle_id
                 tp.save()
+            oi = OilService.objects.filter(vehicle_id=current_vehicle_id).first()
+            if oi:
+                oi.vehicle_id = roadfund.vehicle_id
+                oi.save()
 
 
         if issue_date:

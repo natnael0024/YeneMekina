@@ -39,7 +39,7 @@ def oilservice_list_view(request):
     elif request.method == 'POST':
         plate_number = request.POST.get('plate_number')
         next_service_date = request.POST.get('next_service_date')
-        fill_date = request.POST.get('issue_date')
+        fill_date = request.POST.get('fill_date')
         expire_date = request.POST.get('expire_date')
 
         vehicle = Vehicle.objects.filter(user=user, plate_number=plate_number).first()
@@ -136,7 +136,7 @@ def oilservice_detail_view(request,id):
 
 
         if fill_date:
-            oil_service.issue_date = fill_date
+            oil_service.fill_date = fill_date
         if expire_date:
             oil_service.expire_date = expire_date
         if next_service_date:

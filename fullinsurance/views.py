@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -6,6 +5,7 @@ from .models import FullInsurance
 from bolo.models import Bolo
 from roadfund.models import RoadFund
 from thirdparty.models import ThirdParty
+from oilservice.models import OilService
 from .serializers import FullInsuranceSerializer
 from rest_framework.authtoken.models import Token
 from django.shortcuts import get_object_or_404
@@ -72,6 +72,8 @@ def fullinsurance_list_view(request):
             RoadFund.objects.create(vehicle=vehicle)
         if vehicle.third_parties.count() < 1:
             ThirdParty.objects.create(vehicle=vehicle)
+        if vehicle.oil_services.count() < 1:
+            OilService.objects.create(vehicle=vehicle)
 
         full_insurance = FullInsurance.objects.create (
             vehicle_id = vehicle.id,
@@ -88,6 +90,9 @@ def fullinsurance_list_view(request):
         full_insurance_data['images'] = images_data
 
         return Response(full_insurance_data, status=status.HTTP_201_CREATED)
+    
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 
 @api_view(['GET','POST','PUT','DELETE'])
@@ -148,6 +153,10 @@ def fullinsurance_detail_view(request,id):
             if tp:
                 tp.vehicle_id = full_insurance.vehicle_id
                 tp.save()
+            oi = OilService.objects.filter(vehicle_id=current_vehicle_id).first()
+            if oi:
+                oi.vehicle_id = full_insurance.vehicle_id
+                oi.save()
 
         if insurer:
             full_insurance.insurer = insurer
@@ -157,10 +166,8 @@ def fullinsurance_detail_view(request,id):
             full_insurance.expire_date = expire_date
 
         if 'images' in request.FILES :
-            # print('@*@*@*@*@*@*@*@*@*@*@*@*@*@*@*@* = ',images)
             new_images = []
             for image in request.FILES.getlist('images'):
-                print('++@@@@@@@==',image.name)
                 file_ext = os.path.splitext(image.name)[1]
                 image_name = f'fullinsurance_{uuid.uuid4()}{file_ext}'
                 file_path = f'fullinsurances/{image_name}'
@@ -187,7 +194,6 @@ def fullinsurance_detail_view(request,id):
             for image_url in images:
                 # Extract file path from image URL
                 file_path = image_url.replace(settings.MEDIA_URL, '')
-                print(file_path)
                 # Delete the image file from storage
                 if default_storage.exists(file_path):
                     default_storage.delete(file_path)
@@ -195,3 +201,48 @@ def fullinsurance_detail_view(request,id):
         full_insurance.delete()
         return Response(status=204)
     
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(['DELETE'])
+def fullinsurance_image_delete(request,id,index):
+    token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
+    try:
+        token_obj = Token.objects.get(key=token)
+        user = token_obj.user
+    except Token.DoesNotExist:
+        user = None
+
+    if user:
+        user_id = user.id
+    else:
+        return Response({'message': 'Unauthenticated'}, status=401)
+
+    full_insurance = get_object_or_404(FullInsurance, id=id, vehicle__user=user)
+
+    if request.method == 'DELETE':
+        if full_insurance.images:
+            images = json.loads(full_insurance.images)
+
+            if 0 <= index < len(images):
+                # Extract the file path of the image to be deleted
+                image_url_to_delete = images[index]
+                file_path_to_delete = image_url_to_delete.replace(settings.MEDIA_URL, '')
+
+                # Delete the image file from storage
+                if default_storage.exists(file_path_to_delete):
+                    default_storage.delete(file_path_to_delete)
+
+                # Remove the image URL from the list of images
+                del images[index]
+                full_insurance.images = json.dumps(images)
+                full_insurance.save()
+
+                return Response({'message': 'Image at index {} deleted successfully'.format(index)}, status=200)
+            else:
+                return Response({'message': 'Invalid index provided'}, status=400)
+        else:
+            return Response({'message': 'No images to delete'}, status=404)
+        
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
