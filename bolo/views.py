@@ -1,11 +1,11 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
-
 from webuser.permissions import IsAdminUser
 from .models import Bolo
 from thirdparty.models import ThirdParty
 from roadfund.models import RoadFund
+from fullinsurance.models import FullInsurance
 from .serializers import BoloSerializer
 from vehicle.models import Vehicle
 from django.views.decorators.csrf import csrf_exempt
@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from django.db.models import Count
-
+import json
 import os
 import uuid
 
@@ -63,32 +63,19 @@ def bolo_list_view(request):
         if vehicle:
             bolo_count = vehicle.bolos.count()
             if bolo_count > 0:
-                return JsonResponse({'message': 'Bolo already registered for this plate'}, status=409)
-            
-            # vehicle = Vehicle.objects.annotate(num_bolos=Count('bolos')).get(pk=pk)
-            if vehicle.road_funds.count() < 1:
-                RoadFund.objects.create(vehicle=vehicle)
-
-            if vehicle.third_parties.count() < 1:
-                ThirdParty.objects.create(vehicle=vehicle)
-
-            # if vehicle.fullinsurances.count() < 1:
-            #     FullInsurance.objects.create(vehicle=vehicle)
-
-            # if vehicle.oils.count() < 1:
-            #     Oil.objects.create(vehicle=vehicle)
-
-            vehicle_id = vehicle.id
+                return JsonResponse({'message': 'Bolo already registered for this plate'}, status=409)            
         else:
             vehicle = Vehicle.objects.create(plate_number=plate_number, user=user)
+
+        if vehicle.road_funds.count() < 1:
             RoadFund.objects.create(vehicle=vehicle)
+        if vehicle.third_parties.count() < 1:
             ThirdParty.objects.create(vehicle=vehicle)
-            # FullInsurance.objects.create(vehicle=vehicle)
-            # Oil.objects.create(vehicle=vehicle)
-            vehicle_id = vehicle.id
+        if vehicle.full_insurances.count() < 1:
+            FullInsurance.objects.create(vehicle=vehicle, images=json.dumps([]))
 
         bolo = Bolo.objects.create(
-            vehicle_id=vehicle_id,
+            vehicle_id=vehicle.id,
             inspection_date=inspection_date,
             expire_date=expire_date,
             image=image,
@@ -213,10 +200,10 @@ def bolo_detail_view(request, id):
                 rf.vehicle_id = bolo.vehicle_id
                 rf.save()
 
-            # fi = FullInsurance.objects.filter(vehicle_id=current_vehicle_id).first()
-            # if fi:
-            #     fi.vehicle_id = bolo.vehicle_id
-            #     fi.save()
+            fi = FullInsurance.objects.filter(vehicle_id=current_vehicle_id).first()
+            if fi:
+                fi.vehicle_id = bolo.vehicle_id
+                fi.save()
 
             tp = ThirdParty.objects.filter(vehicle_id=current_vehicle_id).first()
             if tp:
@@ -256,85 +243,85 @@ def bolo_detail_view(request, id):
 
 
 # def bolo_update_view(request, id):
-    token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
-    try:
-        token_obj = Token.objects.get(key=token)
-        user = token_obj.user
-    except Token.DoesNotExist:
-    # Handle the case when the token does not exist or is invalid
-        user = None
+#     token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
+#     try:
+#         token_obj = Token.objects.get(key=token)
+#         user = token_obj.user
+#     except Token.DoesNotExist:
+#     # Handle the case when the token does not exist or is invalid
+#         user = None
 
-    if user:
-        user_id = user.id
-    # Continue with your logic using the user ID
-    else:
-    # Handle the case when the token is invalid or the user does not exist
-        return JsonResponse('message: unauthenticated')
+#     if user:
+#         user_id = user.id
+#     # Continue with your logic using the user ID
+#     else:
+#     # Handle the case when the token is invalid or the user does not exist
+#         return JsonResponse('message: unauthenticated')
     
-    bolo = get_object_or_404(Bolo, id=id, vehicle__user=user)
+#     bolo = get_object_or_404(Bolo, id=id, vehicle__user=user)
 
-    if request.method == 'PUT' or request.method == 'POST':
-        plate_number = request.POST.get('plate_number')
-        inspection_date = request.POST.get('inspection_date')
-        expire_date = request.POST.get('expire_date')
-        image = request.FILES.get('image')
+#     if request.method == 'PUT' or request.method == 'POST':
+#         plate_number = request.POST.get('plate_number')
+#         inspection_date = request.POST.get('inspection_date')
+#         expire_date = request.POST.get('expire_date')
+#         image = request.FILES.get('image')
 
-        if plate_number is not None and plate_number != '':
-            current_vehicle_id = bolo.vehicle_id
+#         if plate_number is not None and plate_number != '':
+#             current_vehicle_id = bolo.vehicle_id
 
-            vehicle = Vehicle.objects.filter(user=user, plate_number=plate_number).first()
+#             vehicle = Vehicle.objects.filter(user=user, plate_number=plate_number).first()
 
-            if vehicle:
-                bolo_exist = Bolo.objects.filter(vehicle_id=vehicle.id).exclude(id=id).exists()
+#             if vehicle:
+#                 bolo_exist = Bolo.objects.filter(vehicle_id=vehicle.id).exclude(id=id).exists()
 
-                if bolo_exist:
-                    return JsonResponse({'message': 'Bolo already exists for this plate'}, status=409)
+#                 if bolo_exist:
+#                     return JsonResponse({'message': 'Bolo already exists for this plate'}, status=409)
 
-                bolo.vehicle_id = vehicle.id
-            else:
-                vehicle = Vehicle.objects.create(user=user, plate_number=plate_number)
-                bolo.vehicle_id = vehicle.id
+#                 bolo.vehicle_id = vehicle.id
+#             else:
+#                 vehicle = Vehicle.objects.create(user=user, plate_number=plate_number)
+#                 bolo.vehicle_id = vehicle.id
 
-            # rf = RoadFund.objects.filter(vehicle_id=current_vehicle_id).first()
-            # if rf:
-            #     rf.vehicle_id = bolo.vehicle_id
-            #     rf.save()
+#             # rf = RoadFund.objects.filter(vehicle_id=current_vehicle_id).first()
+#             # if rf:
+#             #     rf.vehicle_id = bolo.vehicle_id
+#             #     rf.save()
 
-            # fi = FullInsurance.objects.filter(vehicle_id=current_vehicle_id).first()
-            # if fi:
-            #     fi.vehicle_id = bolo.vehicle_id
-            #     fi.save()
+#             # fi = FullInsurance.objects.filter(vehicle_id=current_vehicle_id).first()
+#             # if fi:
+#             #     fi.vehicle_id = bolo.vehicle_id
+#             #     fi.save()
 
-            # tp = ThirdParty.objects.filter(vehicle_id=current_vehicle_id).first()
-            # if tp:
-            #     tp.vehicle_id = bolo.vehicle_id
-            #     tp.save()
+#             # tp = ThirdParty.objects.filter(vehicle_id=current_vehicle_id).first()
+#             # if tp:
+#             #     tp.vehicle_id = bolo.vehicle_id
+#             #     tp.save()
 
-            # oil = Oil.objects.filter(vehicle_id=current_vehicle_id).first()
-            # if oil:
-            #     oil.vehicle_id = bolo.vehicle_id
-            #     oil.save()
+#             # oil = Oil.objects.filter(vehicle_id=current_vehicle_id).first()
+#             # if oil:
+#             #     oil.vehicle_id = bolo.vehicle_id
+#             #     oil.save()
 
-        if image:
-            if bolo.image:
-                bolo.image.delete()
-            bolo.image = image
+#         if image:
+#             if bolo.image:
+#                 bolo.image.delete()
+#             bolo.image = image
 
-        if inspection_date:
-            bolo.inspection_date = inspection_date
+#         if inspection_date:
+#             bolo.inspection_date = inspection_date
 
-        if expire_date:
-            bolo.expire_date = expire_date
+#         if expire_date:
+#             bolo.expire_date = expire_date
 
-        bolo.save()
-        serializer = BoloSerializer(bolo)
-        return JsonResponse(serializer.data)
+#         bolo.save()
+#         serializer = BoloSerializer(bolo)
+#         return JsonResponse(serializer.data)
 
 
 # def bolo_delete_view(request, id):
-    # bolo = get_object_or_404(Bolo, id=id, vehicle__user=request.user)
-    bolo = get_object_or_404(Bolo, id=id)
-    if bolo.image:
-        bolo.image.delete()
-    bolo.delete()
-    return JsonResponse({}, status=204)
+    # # bolo = get_object_or_404(Bolo, id=id, vehicle__user=request.user)
+    # bolo = get_object_or_404(Bolo, id=id)
+    # if bolo.image:
+    #     bolo.image.delete()
+    # bolo.delete()
+    # return JsonResponse({}, status=204)

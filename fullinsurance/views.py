@@ -3,6 +3,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .models import FullInsurance
+from bolo.models import Bolo
+from roadfund.models import RoadFund
+from thirdparty.models import ThirdParty
 from .serializers import FullInsuranceSerializer
 from rest_framework.authtoken.models import Token
 from django.shortcuts import get_object_or_404
@@ -32,14 +35,16 @@ def fullinsurance_list_view(request):
 
         serialized_data = []
         for full_insurance in full_insurances:
-            images = json.loads(full_insurance.images)
-            images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
             full_insurance_data = FullInsuranceSerializer(full_insurance).data
-            full_insurance_data['images'] = images_data
+            if full_insurance.images:
+                images = json.loads(full_insurance.images)
+                images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
+                full_insurance_data['images'] = images_data
             serialized_data.append(full_insurance_data)
 
         return Response({'date':serialized_data}, status=status.HTTP_200_OK)
     
+    # create
     elif request.method == 'POST':
         plate_number = request.POST.get('plate_number')
 
@@ -61,6 +66,13 @@ def fullinsurance_list_view(request):
         else:
             vehicle = user.vehicles.create(plate_number=plate_number)
 
+        if vehicle.bolos.count() < 1:
+            Bolo.objects.create(vehicle=vehicle)
+        if vehicle.road_funds.count() < 1:
+            RoadFund.objects.create(vehicle=vehicle)
+        if vehicle.third_parties.count() < 1:
+            ThirdParty.objects.create(vehicle=vehicle)
+
         full_insurance = FullInsurance.objects.create (
             vehicle_id = vehicle.id,
             insurer = request.data.get('insurer'),
@@ -76,7 +88,6 @@ def fullinsurance_list_view(request):
         full_insurance_data['images'] = images_data
 
         return Response(full_insurance_data, status=status.HTTP_201_CREATED)
-
 
 
 @api_view(['GET','POST','PUT','DELETE'])
@@ -97,8 +108,12 @@ def fullinsurance_detail_view(request,id):
 
     #show
     if request.method == 'GET':
-        serializer = FullInsuranceSerializer(full_insurance)
-        return Response({'data':serializer.data})
+        images = json.loads(full_insurance.images)
+        images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
+        serialized = FullInsuranceSerializer(full_insurance).data
+        serialized['images'] = images_data
+
+        return Response({'data':serialized})
     
     #update
     elif request.method == 'POST' or request.method == 'PUT':
@@ -118,6 +133,21 @@ def fullinsurance_detail_view(request,id):
                 full_insurance.vehicle_id = vehicle.id
             else:
                 vehicle = user.vehicles.create(plate_number=plate_number)
+                full_insurance.vehicle_id = vehicle.id
+
+            # update other docs
+            bolo = Bolo.objects.filter(vehicle_id=current_vehicle_id).first()
+            if bolo:
+                bolo.vehicle_id = full_insurance.vehicle_id
+                bolo.save()
+            rf = RoadFund.objects.filter(vehicle_id=current_vehicle_id).first()
+            if rf:
+                rf.vehicle_id = full_insurance.vehicle_id
+                rf.save()
+            tp = ThirdParty.objects.filter(vehicle_id=current_vehicle_id).first()
+            if tp:
+                tp.vehicle_id = full_insurance.vehicle_id
+                tp.save()
 
         if insurer:
             full_insurance.insurer = insurer
