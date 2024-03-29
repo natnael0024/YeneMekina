@@ -1,6 +1,4 @@
 from django.shortcuts import render
-
-# Create your views here.
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
@@ -15,7 +13,7 @@ from rest_framework.authtoken.models import Token
 import os
 import uuid
 
-@api_view(['GET','POST'])
+@api_view(['GET', 'POST'])
 def driving_license_list(request):
     token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
     try:
@@ -27,14 +25,14 @@ def driving_license_list(request):
     if user:
         user_id = user.id
     else:
-        return JsonResponse('message: unauthenticated')
-    
+        return Response({'message': 'unauthenticated'})
+
     if request.method == 'GET':
         driving_licenses = DrivingLicense.objects.filter(user=user).order_by('-id')
         serializer = DrivingLicenseSerializer(driving_licenses, many=True)
-        return Response({'data':serializer.data})
-    
-    #create
+        return Response({'data': serializer.data})
+
+    # create
     elif request.method == 'POST':
         if request.FILES.get('image'):
             file_ext = os.path.splitext(request.FILES.get('image').name)[1]
@@ -42,9 +40,9 @@ def driving_license_list(request):
         serializer = DrivingLicenseSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=user)
-            return Response({'data':serializer.data}, status=201)
-        return Response(serializer.errors, status=400)
-    
+            return Response({'data': serializer.data}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @api_view(['GET', 'POST', 'PUT', 'DELETE'])
@@ -59,15 +57,15 @@ def driving_license_detail(request, id):
     if user:
         user_id = user.id
     else:
-        return JsonResponse('message: unauthenticated')
-    
+        return Response({'message': 'unauthenticated'})
+
     if request.method == 'GET':
         driving_license = get_object_or_404(DrivingLicense, id=id, user=user)
         serializer = DrivingLicenseSerializer(driving_license)
-        return Response({'data':serializer.data})
-    
-    #update
-    elif request.method == 'POST' or request.method == 'PUT':
+        return Response({'data': serializer.data})
+
+    # update
+    elif request.method in ['POST', 'PUT']:
         driving_license = get_object_or_404(DrivingLicense, id=id, user=user)
         if request.FILES.get('image'):
             if driving_license.image:
@@ -78,14 +76,14 @@ def driving_license_detail(request, id):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-    
-    #delete
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # delete
     elif request.method == 'DELETE':
         driving_license = get_object_or_404(DrivingLicense, id=id, user=user)
         if driving_license.image:
             driving_license.image.delete()
         driving_license.delete()
-        return Response(status=204)
-    
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
