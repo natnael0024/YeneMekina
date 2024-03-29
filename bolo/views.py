@@ -107,7 +107,6 @@ def bolo_detail_view(request, id):
         return Response({'message: unauthenticated'})
     
     bolo = get_object_or_404(Bolo, id=id, vehicle__user=user)
-
     if request.method == 'GET':
         serializer = BoloSerializer(bolo)
         return Response({'data':serializer.data})
@@ -178,4 +177,6 @@ def bolo_detail_view(request, id):
             bolo.image.delete()
         bolo.delete()
         return Response({}, status=204)
+
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
