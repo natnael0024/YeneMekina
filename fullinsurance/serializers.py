@@ -1,10 +1,9 @@
 from rest_framework import serializers
-from .models import ThirdParty
+from .models import FullInsurance
 from vehicle.models import Vehicle
 from datetime import datetime
 
-
-class ThirdPartySerializer(serializers.ModelSerializer):
+class FullInsuranceSerializer(serializers.ModelSerializer):
     isAboutToExpire = serializers.SerializerMethodField()
     isExpired = serializers.SerializerMethodField()
     daysRemaining = serializers.SerializerMethodField()
@@ -12,8 +11,8 @@ class ThirdPartySerializer(serializers.ModelSerializer):
     completed = serializers.SerializerMethodField()
 
     class Meta:
-        model = ThirdParty
-        fields = ('id', 'issue_date', 'expire_date','insurer', 'image','vehicle_id', 'isAboutToExpire', 'isExpired', 'daysRemaining', 'plate_number', 'completed')
+        model = FullInsurance
+        fields = ('id','insurer', 'issue_date', 'expire_date', 'images','vehicle_id', 'isAboutToExpire', 'isExpired', 'daysRemaining', 'plate_number', 'completed')
 
 
     def get_isAboutToExpire(self, obj):

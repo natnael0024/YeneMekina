@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from .models import ThirdParty
+from .models import OilService
 from vehicle.models import Vehicle
 from datetime import datetime
 
 
-class ThirdPartySerializer(serializers.ModelSerializer):
+class OilServiceSerializer(serializers.ModelSerializer):
     isAboutToExpire = serializers.SerializerMethodField()
     isExpired = serializers.SerializerMethodField()
     daysRemaining = serializers.SerializerMethodField()
@@ -12,8 +12,8 @@ class ThirdPartySerializer(serializers.ModelSerializer):
     completed = serializers.SerializerMethodField()
 
     class Meta:
-        model = ThirdParty
-        fields = ('id', 'issue_date', 'expire_date','insurer', 'image','vehicle_id', 'isAboutToExpire', 'isExpired', 'daysRemaining', 'plate_number', 'completed')
+        model = OilService
+        fields = ('id', 'fill_date', 'next_service_date', 'expire_date', 'vehicle_id', 'isAboutToExpire', 'isExpired', 'daysRemaining', 'plate_number', 'completed')
 
 
     def get_isAboutToExpire(self, obj):
@@ -59,4 +59,4 @@ class ThirdPartySerializer(serializers.ModelSerializer):
         return None
 
     def get_completed(self, obj):
-        return "completed" if obj.issue_date and obj.expire_date else "incomplete"
+        return "completed" if obj.fill_date and obj.expire_date else "incomplete"

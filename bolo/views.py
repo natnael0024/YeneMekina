@@ -177,4 +177,6 @@ def bolo_detail_view(request, id):
             bolo.image.delete()
         bolo.delete()
         return Response({}, status=204)
+
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+

@@ -25,20 +25,25 @@ from rest_framework.status import HTTP_403_FORBIDDEN
 
 class UserRegistrationView(APIView):
     def post(self, request):
+
         group_id = request.data.get("group")
         group = None
+
 
         if group_id:
             try:
                 group = Group.objects.get(id=group_id)
             except Group.DoesNotExist:
+
                 return Response(
                     {"message": "Group not found."}, status=status.HTTP_404_NOT_FOUND
                 )
 
+
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+
             if group:
                 user.groups.add(group)
             else:
@@ -49,6 +54,7 @@ class UserRegistrationView(APIView):
             token, _ = Token.objects.get_or_create(user=user)
             send_otp(user.phone_number, user)  
             return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
+
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

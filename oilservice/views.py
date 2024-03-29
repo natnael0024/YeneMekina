@@ -2,13 +2,13 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from .models import RoadFund
+from .models import OilService
 from bolo.models import Bolo
-from oilservice.models import OilService
+from roadfund.models import RoadFund
 from thirdparty.models import ThirdParty
 from fullinsurance.models import FullInsurance
 from vehicle.models import Vehicle
-from .serializers import RoadFundSerializer
+from .serializers import OilServiceSerializer
 from rest_framework.authtoken.models import Token
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -17,7 +17,7 @@ import uuid
 import json
 
 @api_view(['GET','POST'])
-def roadfund_list_view(request):
+def oilservice_list_view(request):
     token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
     try:
         token_obj = Token.objects.get(key=token)
@@ -31,27 +31,23 @@ def roadfund_list_view(request):
         return JsonResponse('message: unauthenticated')
     
     if request.method == 'GET':
-        roadfunds = RoadFund.objects.filter(vehicle__user_id=user_id).order_by('-created_at')
-        serializer = RoadFundSerializer(roadfunds,many=True)
+        oil_services = OilService.objects.filter(vehicle__user_id=user_id).order_by('-created_at')
+        serializer = OilServiceSerializer(oil_services,many=True)
         return JsonResponse({'data':serializer.data}, safe=False)
     
-    # create new roadfund
+    # create new oil service
     elif request.method == 'POST':
         plate_number = request.POST.get('plate_number')
-        issue_date = request.POST.get('issue_date')
+        next_service_date = request.POST.get('next_service_date')
+        fill_date = request.POST.get('fill_date')
         expire_date = request.POST.get('expire_date')
-        image = request.FILES.get('image')
-
-        if image:
-            file_ext = os.path.splitext(image.name)[1]
-            image.name = f'roadfund_{uuid.uuid4()}{file_ext}'
 
         vehicle = Vehicle.objects.filter(user=user, plate_number=plate_number).first()
 
         if vehicle:
-            roadfund_count = vehicle.road_funds.count()
-            if roadfund_count > 0:
-                return JsonResponse({'message': 'Road fund already registered for this plate'}, status=409)
+            oil_service_count = vehicle.oil_services.count()
+            if oil_service_count > 0:
+                return JsonResponse({'message': 'Oil service date already registered for this plate'}, status=409)
         else:
             vehicle = Vehicle.objects.create(user=user, plate_number=plate_number)
         
@@ -61,24 +57,24 @@ def roadfund_list_view(request):
             FullInsurance.objects.create(vehicle=vehicle, images=json.dumps([]))
         if vehicle.third_parties.count() < 1:
             ThirdParty.objects.create(vehicle=vehicle)
-        if vehicle.oil_services.count() < 1:
-            OilService.objects.create(vehicle=vehicle)
+        if vehicle.road_funds.count() < 1:
+            RoadFund.objects.create(vehicle=vehicle)
 
-        roadfund = RoadFund.objects.create(
+        oil_service = OilService.objects.create(
             vehicle_id = vehicle.id,
-            issue_date = issue_date,
+            fill_date = fill_date,
+            next_service_date = next_service_date,
             expire_date = expire_date,
-            image = image,
             notification_status=False
         )
 
-        serializer = RoadFundSerializer(roadfund)
+        serializer = OilServiceSerializer(oil_service)
         return JsonResponse(serializer.data, status=201)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 # show, update, delete
 @api_view(['GET','PUT','POST','DELETE'])
-def roadfund_detail_view(request,id):
+def oilservice_detail_view(request,id):
     token = request.META.get('HTTP_AUTHORIZATION', '').split(' ')[1]
     try:
         token_obj = Token.objects.get(key=token)
@@ -91,87 +87,69 @@ def roadfund_detail_view(request,id):
     else:
         return JsonResponse('message: unauthenticated')
     
-    roadfund = get_object_or_404(RoadFund,id=id, vehicle__user = user)
+    oil_service = get_object_or_404(OilService,id=id, vehicle__user = user)
 
     #show
     if request.method == 'GET':
-        serializer = RoadFundSerializer(roadfund)
+        serializer = OilServiceSerializer(oil_service)
         return Response({'data':serializer.data})
     
     # update
     if request.method == 'POST' or request.method == 'PUT':
         plate_number = request.POST.get('plate_number')
-        issue_date = request.POST.get('issue_date')
+        fill_date = request.POST.get('fill_date')
         expire_date = request.POST.get('expire_date')
-        image = request.FILES.get('image')
-
-        if image:
-            if roadfund.image:
-                roadfund.image.delete()
-            file_ext = os.path.splitext(image.name)[1]
-            image.name = f'roadfund_{uuid.uuid4()}{file_ext}'
-            roadfund.image = image
+        next_service_date = request.POST.get('next_service_date')
         
         if plate_number:
-            current_vehicle_id = roadfund.vehicle_id
+            current_vehicle_id = oil_service.vehicle_id
 
             vehicle = Vehicle.objects.filter(plate_number=plate_number, user=user).first()
 
             if vehicle:
-                roadfund_count = vehicle.road_funds.count()
-                if roadfund_count > 0 :
-                    return Response({'message': 'Road fund already registered for this plate'}, status=409)
-                roadfund.vehicle_id = vehicle.id
+                oil_service_count = vehicle.oil_services.count()
+                if oil_service_count > 0 :
+                    return Response({'message': 'Oil service date already registered for this plate'}, status=409)
+                oil_service.vehicle_id = vehicle.id
                 
             else:
                 vehicle = Vehicle.objects.create(plate_number=plate_number, user=user)
-                roadfund.vehicle_id = vehicle.id
+                oil_service.vehicle_id = vehicle.id
 
             # update other docs
             bolo = Bolo.objects.filter(vehicle_id=current_vehicle_id).first()
             if bolo:
-                bolo.vehicle_id = roadfund.vehicle_id
+                bolo.vehicle_id = oil_service.vehicle_id
                 bolo.save()
             fi = FullInsurance.objects.filter(vehicle_id=current_vehicle_id).first()
             if fi:
-                fi.vehicle_id = roadfund.vehicle_id
+                fi.vehicle_id = oil_service.vehicle_id
                 fi.save()
             tp = ThirdParty.objects.filter(vehicle_id=current_vehicle_id).first()
             if tp:
-                tp.vehicle_id = roadfund.vehicle_id
+                tp.vehicle_id = oil_service.vehicle_id
                 tp.save()
-            oi = OilService.objects.filter(vehicle_id=current_vehicle_id).first()
-            if oi:
-                oi.vehicle_id = roadfund.vehicle_id
-                oi.save()
+            rf = RoadFund.objects.filter(vehicle_id=current_vehicle_id).first()
+            if rf:
+                rf.vehicle_id = oil_service.vehicle_id
+                rf.save()
 
 
-        if issue_date:
-            roadfund.issue_date = issue_date
+        if fill_date:
+            oil_service.fill_date = fill_date
         if expire_date:
-            roadfund.expire_date = expire_date
-        roadfund.save()
-        serializer = RoadFundSerializer(roadfund)
+            oil_service.expire_date = expire_date
+        if next_service_date:
+            oil_service.next_service_date = next_service_date
+        oil_service.save()
+
+        serializer = OilServiceSerializer(oil_service)
 
         return Response({'data':serializer.data}, status=200)
     
     #delete
     elif request.method == 'DELETE':
-        if roadfund.image:
-            roadfund.image.delete()
-        roadfund.delete()
+        oil_service.delete()
         return Response(status=204)
-    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-        
-
-
-            
-
-            
-            
-
-
-                
     
-
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

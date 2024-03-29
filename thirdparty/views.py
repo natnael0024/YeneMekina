@@ -5,6 +5,8 @@ from rest_framework import status
 from .models import ThirdParty
 from bolo.models import Bolo
 from roadfund.models import RoadFund
+from fullinsurance.models import FullInsurance
+from oilservice.models import OilService
 from vehicle.models import Vehicle
 from .serializers import ThirdPartySerializer
 from rest_framework.authtoken.models import Token
@@ -12,6 +14,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 import os
 import uuid
+import json
 
 @api_view(['GET','POST'])
 def thirdparty_list_view(request):
@@ -35,6 +38,7 @@ def thirdparty_list_view(request):
     # create new ThirdParty
     elif request.method == 'POST':
         plate_number = request.POST.get('plate_number')
+        insurer = request.POST.get('insurer')
         issue_date = request.POST.get('issue_date')
         expire_date = request.POST.get('expire_date')
         image = request.FILES.get('image')
@@ -49,32 +53,23 @@ def thirdparty_list_view(request):
             thirdparty_count = vehicle.third_parties.count()
             if thirdparty_count > 0:
                 return Response({'message': 'Third Party insurance already registered for this plate'}, status=409)
-            vehicle_id = vehicle.id
-
-            if vehicle.bolos.count() < 1:
-                Bolo.objects.create(vehicle=vehicle)
-
-            if vehicle.road_funds.count() < 1:
-                RoadFund.objects.create(vehicle=vehicle)
-
-            # if vehicle.fullinsurances.count() < 1:
-            #     FullInsurance.objects.create(vehicle=vehicle)
-
-            # if vehicle.oils.count() < 1:
-            #     Oil.objects.create(vehicle=vehicle)
-
         else:
             vehicle = Vehicle.objects.create(user=user, plate_number=plate_number)
-            vehicle_id = vehicle.id
+            
+        if vehicle.bolos.count() < 1:
             Bolo.objects.create(vehicle=vehicle)
+        if vehicle.full_insurances.count() < 1:
+            FullInsurance.objects.create(vehicle=vehicle, images=json.dumps([]))
+        if vehicle.road_funds.count() < 1:
             RoadFund.objects.create(vehicle=vehicle)
-            # FullInsurance.objects.create(vehicle=vehicle)
-            # Oil.objects.create(vehicle=vehicle)
+        if vehicle.oil_services.count() < 1:
+            OilService.objects.create(vehicle=vehicle)
 
         thirdparty = ThirdParty.objects.create(
-            vehicle_id = vehicle_id,
+            vehicle_id = vehicle.id,
             issue_date = issue_date,
             expire_date = expire_date,
+            insurer = insurer,
             image = image,
             notification_status=False
         )
@@ -109,6 +104,7 @@ def thirdParty_detail_view(request,id):
         plate_number = request.POST.get('plate_number')
         issue_date = request.POST.get('issue_date')
         expire_date = request.POST.get('expire_date')
+        insurer = request.POST.get('insurer')
         image = request.FILES.get('image')
 
         if image:
@@ -143,12 +139,22 @@ def thirdParty_detail_view(request,id):
             if rf:
                 rf.vehicle_id = thirdparty.vehicle_id
                 rf.save()
-
+            fi = FullInsurance.objects.filter(vehicle_id=current_vehicle_id).first()
+            if fi:
+                fi.vehicle_id = thirdparty.vehicle_id
+                fi.save()
+            oi = OilService.objects.filter(vehicle_id=current_vehicle_id).first()
+            if oi:
+                oi.vehicle_id = thirdparty.vehicle_id
+                oi.save()
             
+
         if issue_date:
             thirdparty.issue_date = issue_date
         if expire_date:
             thirdparty.expire_date = expire_date
+        if insurer:
+            thirdparty.insurer = insurer
         thirdparty.save()
         serializer = ThirdPartySerializer(thirdparty)
 
