@@ -10,7 +10,6 @@ from fullinsurance.models import FullInsurance
 from vehicle.models import Vehicle
 from .serializers import OilServiceSerializer
 from rest_framework.authtoken.models import Token
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 import os
 import uuid
@@ -28,26 +27,26 @@ def oilservice_list_view(request):
     if user:
         user_id = user.id
     else:
-        return JsonResponse('message: unauthenticated')
+        return Response('message: unauthenticated')
     
     if request.method == 'GET':
         oil_services = OilService.objects.filter(vehicle__user_id=user_id).order_by('-created_at')
         serializer = OilServiceSerializer(oil_services,many=True)
-        return JsonResponse({'data':serializer.data}, safe=False)
+        return Response({'data':serializer.data})
     
     # create new oil service
     elif request.method == 'POST':
-        plate_number = request.POST.get('plate_number')
-        next_service_date = request.POST.get('next_service_date')
-        fill_date = request.POST.get('fill_date')
-        expire_date = request.POST.get('expire_date')
+        plate_number = request.data.get('plate_number')
+        next_service_date = request.data.get('next_service_date')
+        fill_date = request.data.get('fill_date')
+        expire_date = request.data.get('expire_date')
 
         vehicle = Vehicle.objects.filter(user=user, plate_number=plate_number).first()
 
         if vehicle:
             oil_service_count = vehicle.oil_services.count()
             if oil_service_count > 0:
-                return JsonResponse({'message': 'Oil service date already registered for this plate'}, status=409)
+                return Response({'message': 'Oil service date already registered for this plate'}, status=409)
         else:
             vehicle = Vehicle.objects.create(user=user, plate_number=plate_number)
         
@@ -69,7 +68,7 @@ def oilservice_list_view(request):
         )
 
         serializer = OilServiceSerializer(oil_service)
-        return JsonResponse(serializer.data, status=201)
+        return Response({'data':serializer.data}, status=201)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 # show, update, delete
@@ -85,7 +84,7 @@ def oilservice_detail_view(request,id):
     if user:
         user_id = user.id
     else:
-        return JsonResponse('message: unauthenticated')
+        return Response('message: unauthenticated')
     
     oil_service = get_object_or_404(OilService,id=id, vehicle__user = user)
 
@@ -96,10 +95,10 @@ def oilservice_detail_view(request,id):
     
     # update
     if request.method == 'POST' or request.method == 'PUT':
-        plate_number = request.POST.get('plate_number')
-        fill_date = request.POST.get('fill_date')
-        expire_date = request.POST.get('expire_date')
-        next_service_date = request.POST.get('next_service_date')
+        plate_number = request.data.get('plate_number')
+        fill_date = request.data.get('fill_date')
+        expire_date = request.data.get('expire_date')
+        next_service_date = request.data.get('next_service_date')
         
         if plate_number:
             current_vehicle_id = oil_service.vehicle_id

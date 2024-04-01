@@ -75,7 +75,9 @@ def driving_license_detail(request, id):
         serializer = DrivingLicenseSerializer(driving_license, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+
+            return Response({'data':serializer.data})
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # delete

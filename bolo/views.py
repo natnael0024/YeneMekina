@@ -45,9 +45,9 @@ def bolo_list_view(request):
     
     # create new bolo
     elif request.method == 'POST':
-        plate_number = request.POST.get('plate_number')
-        inspection_date = request.POST.get('inspection_date')
-        expire_date = request.POST.get('expire_date')
+        plate_number = request.data.get('plate_number')
+        inspection_date = request.data.get('inspection_date')
+        expire_date = request.data.get('expire_date')
         image = request.FILES.get('image')
 
         if image:
@@ -75,7 +75,10 @@ def bolo_list_view(request):
             FullInsurance.objects.create(vehicle=vehicle, images=json.dumps([]))
         if vehicle.oil_services.count() < 1:
             OilService.objects.create(vehicle=vehicle)
-
+        # serializer = BoloSerializer(data=request.data)
+        # if serializer.is_valid():
+        #     serializer.save(vehicle_id=vehicle.id)
+        #     return Response({'data': serializer.data}, status=status.HTTP_201_CREATED)
         bolo = Bolo.objects.create(
             vehicle_id=vehicle.id,
             inspection_date=inspection_date,
@@ -113,9 +116,9 @@ def bolo_detail_view(request, id):
     
     # update bolo
     elif request.method == 'POST' or request.method == 'PUT':
-        plate_number = request.POST.get('plate_number')
-        inspection_date = request.POST.get('inspection_date')
-        expire_date = request.POST.get('expire_date')
+        plate_number = request.data.get('plate_number')
+        inspection_date = request.data.get('inspection_date')
+        expire_date = request.data.get('expire_date')
         image = request.FILES.get('image')
 
         if plate_number is not None and plate_number != '':
