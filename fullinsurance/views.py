@@ -84,12 +84,6 @@ def fullinsurance_list_view(request):
             notification_status = False
         )
 
-        # images = json.loads(full_insurance.images)
-        # images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
-        # full_insurance_data = FullInsuranceSerializer(full_insurance).data
-        # full_insurance_data['images'] = images_data
-
-        # full_insurance_data = FullInsuranceSerializer(full_insurance).data
         images = json.loads(full_insurance.images)
         images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
         serialized = FullInsuranceSerializer(full_insurance).data
@@ -97,10 +91,8 @@ def fullinsurance_list_view(request):
 
         return Response({'data':serialized},status=200)
     
-        # return Response({'data':full_insurance_data}, status=status.HTTP_201_CREATED)
     
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
 
 
 @api_view(['GET','POST','PUT','DELETE'])
