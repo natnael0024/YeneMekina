@@ -32,7 +32,7 @@ DEBUG = True
 
 
 
-ALLOWED_HOSTS = ['192.168.1.6','localhost']
+ALLOWED_HOSTS = ['192.168.1.6', '127.0.0.1']
 
 
 
@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'thirdparty',
     'fullinsurance',
     'oilservice',
+    'document',
 
     'accounts',
     'rest_framework.authtoken',
