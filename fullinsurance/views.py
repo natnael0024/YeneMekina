@@ -42,11 +42,11 @@ def fullinsurance_list_view(request):
                 full_insurance_data['images'] = images_data
             serialized_data.append(full_insurance_data)
 
-        return Response({'date':serialized_data}, status=status.HTTP_200_OK)
+        return Response({'data':serialized_data}, status=status.HTTP_200_OK)
     
     # create
     elif request.method == 'POST':
-        plate_number = request.POST.get('plate_number')
+        plate_number = request.data.get('plate_number')
 
         images = []
         if 'images' in request.FILES:
@@ -84,12 +84,20 @@ def fullinsurance_list_view(request):
             notification_status = False
         )
 
+        # images = json.loads(full_insurance.images)
+        # images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
+        # full_insurance_data = FullInsuranceSerializer(full_insurance).data
+        # full_insurance_data['images'] = images_data
+
+        # full_insurance_data = FullInsuranceSerializer(full_insurance).data
         images = json.loads(full_insurance.images)
         images_data = [{'index': index, 'image': image} for index, image in enumerate(images)]
-        full_insurance_data = FullInsuranceSerializer(full_insurance).data
-        full_insurance_data['images'] = images_data
+        serialized = FullInsuranceSerializer(full_insurance).data
+        serialized['images'] = images_data
 
-        return Response(full_insurance_data, status=status.HTTP_201_CREATED)
+        return Response({'data':serialized},status=200)
+    
+        # return Response({'data':full_insurance_data}, status=status.HTTP_201_CREATED)
     
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 

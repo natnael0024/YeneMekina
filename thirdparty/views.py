@@ -10,7 +10,6 @@ from oilservice.models import OilService
 from vehicle.models import Vehicle
 from .serializers import ThirdPartySerializer
 from rest_framework.authtoken.models import Token
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 import os
 import uuid
@@ -37,10 +36,10 @@ def thirdparty_list_view(request):
     
     # create new ThirdParty
     elif request.method == 'POST':
-        plate_number = request.POST.get('plate_number')
-        insurer = request.POST.get('insurer')
-        issue_date = request.POST.get('issue_date')
-        expire_date = request.POST.get('expire_date')
+        plate_number = request.data.get('plate_number')
+        insurer = request.data.get('insurer')
+        issue_date = request.data.get('issue_date')
+        expire_date = request.data.get('expire_date')
         image = request.FILES.get('image')
 
         if image:
@@ -75,7 +74,7 @@ def thirdparty_list_view(request):
         )
 
         serializer = ThirdPartySerializer(thirdparty)
-        return Response(serializer.data, status=201)
+        return Response({'data':serializer.data}, status=201)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 # show, update, delete
@@ -101,10 +100,10 @@ def thirdParty_detail_view(request,id):
     
     # update
     if request.method == 'POST' or request.method == 'PUT':
-        plate_number = request.POST.get('plate_number')
-        issue_date = request.POST.get('issue_date')
-        expire_date = request.POST.get('expire_date')
-        insurer = request.POST.get('insurer')
+        plate_number = request.data.get('plate_number')
+        issue_date = request.data.get('issue_date')
+        expire_date = request.data.get('expire_date')
+        insurer = request.data.get('insurer')
         image = request.FILES.get('image')
 
         if image:
@@ -167,4 +166,3 @@ def thirdParty_detail_view(request,id):
         thirdparty.delete()
         return Response(status=204)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
