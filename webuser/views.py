@@ -16,12 +16,17 @@ from django.contrib.contenttypes.models import ContentType
 @api_view(['POST'])
 def create_group(request):
     group_name = request.data.get('group_name')
+
     if group_name:
+        
+        if Group.objects.filter(name=group_name).exists():
+            return Response({'error': 'Group with the same name already exists.'}, status=200)
+
         group = Group(name=group_name)
         group.save()
-        return Response({'message': 'Group created successfully.'})
+        return Response({'message': 'Group created successfully.','group_id':group.id,'group':group_name})
 
-    return Response({'error': 'Group name is required.'}, status=400)
+    return Response({'error': 'Group name is required.'}, status=200)
 
 @api_view(['GET'])
 def get_group(request):
@@ -39,6 +44,10 @@ def edit_group(request, group_id):
         return Response({'error': 'Group not found.'}, status=404)
 
     if group_name:
+        if Group.objects.filter(name=group_name).exists():
+            return Response({'error': 'Group with the same name already exists.'}, status=200)
+
+
         group.name = group_name
     
     if permission_ids:
@@ -50,15 +59,19 @@ def edit_group(request, group_id):
     
     group.save()
     return Response({'message': 'Group updated successfully.'})
-@api_view(['DELETE'])
-def delete_group(request, group_id):
-    group = Group.objects.get(id=group_id)
-    group.delete()
-    return Response({'message': 'Group deleted successfully.'})
 
+@api_view(["DELETE"])
+def delete_group(request, group_id):
+    try:
+        group = Group.objects.get(id=group_id)
+        group.delete()
+        return Response({'message': 'Group deleted successfully.'})
+    except Group.DoesNotExist:
+        return Response({'error': 'Group not found.'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
 @api_view(['POST'])
 def create_permission(request):
-    
     name = request.data.get('name')
 
     if not all([name]):
@@ -66,16 +79,27 @@ def create_permission(request):
 
     try:
         content_type = ContentType.objects.get_for_model(Group)
+
+        # Check if a permission with the same codename already exists
+        existing_permission = Permission.objects.filter(content_type=content_type, codename=name).first()
+        if existing_permission:
+            # Update the existing permission instead of creating a new one
+            existing_permission.name = name
+            existing_permission.save()
+            return Response({'message': 'Permission updated successfully.'})
+
+        # Create a new permission if no existing permission found
         permission = Permission.objects.create(
-            
             name=name,
             content_type=content_type,
+            codename=name.lower().replace(' ', '_'),  # Replace spaces with underscores for the codename
         )
+    except ContentType.DoesNotExist:
+        return Response({'error': 'Invalid content type.'}, status=400)
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
-    return Response({'message': 'Permission created successfully.'})
-
+    return Response({'message': 'Permission created successfully.','permission_id': permission.id,'permission':permission.name})
 @api_view(['GET'])
 def get_permission(request):
     permissions = Permission.objects.all().values('id','name')
@@ -98,6 +122,18 @@ def edit_permission(request, permission_id):
         return Response({'error': str(e)}, status=500)
 
     return Response({'message': 'Permission updated successfully.'})
+
+
+@api_view(["DELETE"])
+def delete_permission(request, permission_id):
+    try:
+        permission = Permission.objects.get(id=permission_id)
+        permission.delete()
+        return Response({'message': 'Permission deleted successfully.'})
+    except Permission.DoesNotExist:
+        return Response({'error': 'Permission not found.'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
 
 
 @api_view(['GET'])
