@@ -32,6 +32,8 @@ urlpatterns = [
     path('api/',include('fullinsurance.urls')),
     path('api/',include('oilservice.urls')),
     path('api/',include('document.urls')),
+    path('api/',include('map.urls')),
+    path('api/',include('advert.urls')),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -55,7 +55,8 @@ INSTALLED_APPS = [
     'fullinsurance',
     'oilservice',
     'document',
-
+    'map',
+    'advert',
     'accounts',
     'rest_framework.authtoken',
     'corsheaders',
